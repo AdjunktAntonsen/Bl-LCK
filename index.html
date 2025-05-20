@@ -50,8 +50,38 @@
     .bike-animation {
       position: absolute;
       top: 10px;
-      left: -50px;
+      left: calc(100% + 50px);
       font-size: 2rem;
+    }
+    .bike-animation.animate {
+      animation: ride-diag 8s linear;
+    }
+    @keyframes ride-diag {
+      from {
+        top: 10px;
+        left: calc(100% + 50px);
+      }
+      to {
+        top: calc(100% + 50px);
+        left: -50px;
+      }
+    }
+    .bike-animation.animate {
+      animation: ride-diag 8s linear;
+    }@keyframes ride-diag {
+      from {
+        top: 10px;
+        left: -50px;
+      }
+      to {
+        top: calc(100% + 50px);
+        left: -50px;
+      }
+    }
+      to {
+        top: calc(100% + 50px);
+        left: calc(100% + 50px);
+      }
     }
     .bike-animation.animate {
       animation: ride 8s linear;
@@ -104,6 +134,8 @@
     #timer-container {
       text-align: center;
       margin-bottom: 2rem;
+      font-size: 2rem; /* enlarged font */
+      font-weight: bold;
     }
     #info-section {
       display: flex;
@@ -152,7 +184,10 @@
       <div id="hint-title">Hint!</div>
       <div id="hint">--</div>
       <div id="status"></div>
-      <div id="timer-container">Timer: <span id="timer">05:00</span></div>
+      <div id="timer-container">
+        Tid: <span id="timer">05:00</span>
+        <canvas id="clock" width="100" height="100" style="margin-left:1rem; vertical-align:middle;"></canvas>
+      </div>
     </section>
     <section id="info-section">
       <div id="lists">
