@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MTB 2025</title>
+  <style>
+    :root {
+      --bg: #f0f4f8;
+      --card-bg: #ffffff;
+      --text-primary: #1a1a1a;
+      --text-secondary: #34495e;
+      --accent: #005f73;
+      --watermark: rgba(0, 95, 115, 0.1);
+      --radius: 8px;
+      --transition: 0.3s ease;
+      --font-base: "Segoe UI", Roboto, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; transition: var(--transition); }
+    body { margin: 0; padding: 2rem; background: var(--bg); font-family: var(--font-base); color: var(--text-secondary); display: flex; justify-content: center; }
+    .container { position: relative; width: 100%; max-width: 700px; background: var(--card-bg); border-radius: var(--radius); box-shadow: 0 4px 12px rgba(0,0,0,0.05); padding: 2rem; }
+    .watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg); font-size: 4rem; color: var(--watermark); pointer-events: none; user-select: none; }
+    .bike-animation { position: absolute; top: 10px; left: -50px; font-size: 2rem; }
+    .bike-animation.animate { animation: ride 8s linear; }
+    @keyframes ride { from { left: calc(100% + 50px); } to { left: -50px; } }
+    h1 { font-size: 2rem; margin-bottom: 1rem; color: var(--text-primary); text-align: center; }
+    #controls { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+    #speakBtn, #actionBtn { background: var(--accent); border: none; color: white; padding: 0.75rem 1rem; font-size: 1rem; cursor: pointer; border-radius: var(--radius); }
+    #answer { flex: 1; padding: 0.75rem; font-size: 1rem; border: 2px solid #ccc; border-radius: var(--radius); }
+    #hint-title { margin-top: 1rem; font-size: 1.25rem; font-weight: bold; }
+    #hint { margin: 0.5rem 0; font-size: 1.25rem; }
+    #status { margin: 1rem 0; font-size: 1rem; text-align: center; }
+    #timer-container { text-align: center; margin-bottom: 2rem; }
+    section { margin-bottom: 2rem; }
+    #info-section { display: flex; gap: 2rem; }
+    #lists { flex: 1; }
+    #highscore-section { flex: 1; }
+    #highscore-list li { font-size: 1.25rem; font-weight: bold; margin: 0.5rem 0; }
+    ul, ol { padding-left: 1.25rem; }
+    #name-entry { display: none; margin-top: 1rem; }
+    #name-entry input { padding: 0.5rem; font-size: 1rem; border-radius: var(--radius); border: 1px solid #ccc; }
+    #name-entry button { padding: 0.5rem 1rem; margin-left: 0.5rem; background: var(--accent); color: white; border: none; border-radius: var(--radius); cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="watermark">TrenerLCKblå2025</div>
+    <div class="bike-animation">🚵‍♂️</div>
+    <h1>MTB 2025</h1>
+    <section id="quiz-section">
+      <div id="controls">
+        <button id="speakBtn">🔊</button>
+        <input type="text" id="answer" placeholder="Skriv uttrykket her" disabled>
+        <button id="actionBtn">Start</button>
+      </div>
+      <div id="hint-title">Hint!</div>
+      <div id="hint">--</div>
+      <div id="status"></div>
+      <div id="timer-container">Timer: <span id="timer">05:00</span></div>
+    </section>
+    <section id="info-section">
+      <div id="lists">
+        <h2>Teknisk stisykling uttrykk</h2>
+        <ul id="expressions-list"></ul>
+        <h2>Sykkeldeler</h2>
+        <ul id="parts-list"></ul>
+        <h2>Tips for stisyklister</h2>
+        <ol id="tips-list"></ol>
+      </div>
+      <div id="highscore-section">
+        <h2>Highscore</h2>
+        <ul id="highscore-list"></ul>
+        <div id="name-entry">
+          <input type="text" id="playerName" placeholder="Ditt navn">
+          <button id="submitName">Send inn</button>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+    // Data
+    const expressions = ['brattklatring','drop','rockgarden','teknisk sti','steinsprang','kanting','flowtrail','dobbeltrail','singeltrack'];
+    const bikeParts = ['ramme','gaffel','demper','styre','setepinne','krank','kjede','girskifter','bremsekaliper','dekk'];
+    const tips = ['Hold blikket fremover','Bruk knærne som støtdempere','Velg riktig gir','Hold pedalene parallelle','Øv på vektfordeling'];
+    const entries = [...expressions, ...bikeParts, ...tips];
+    let highscores = [
+      {name:'Espen',score:50},
+      {name:'Øivind',score:40},
+      {name:'Benny',score:30},
+      {name:'Joel',score:20},
+      {name:'Torjus',score:15}
+    ];
+
+    // State
+    let studentScore = 0;
+    let timeLeft = 300;
+    let timerInterval;
+    let currentAnswer = '';
+
+    // Elements
+    const speakBtn = document.getElementById('speakBtn');
+    const answerInput = document.getElementById('answer');
+    const actionBtn = document.getElementById('actionBtn');
+    const hintEl = document.getElementById('hint');
+    const statusEl = document.getElementById('status');
+    const timerEl = document.getElementById('timer');
+    const expList = document.getElementById('expressions-list');
+    const partsList = document.getElementById('parts-list');
+    const tipsList = document.getElementById('tips-list');
+    const highscoreListEl = document.getElementById('highscore-list');
+    const nameEntryEl = document.getElementById('name-entry');
+    const playerNameInput = document.getElementById('playerName');
+    const submitNameBtn = document.getElementById('submitName');
+    const bikeAnimationEl = document.querySelector('.bike-animation');
+
+    // Render lists
+    expressions.forEach(e => { const li=document.createElement('li'); li.textContent=e; expList.appendChild(li); });
+    bikeParts.forEach(p => { const li=document.createElement('li'); li.textContent=p; partsList.appendChild(li); });
+    tips.forEach(t => { const li=document.createElement('li'); li.textContent=t; tipsList.appendChild(li); });
+
+    // Highscore
+    function renderHighscores() {
+      highscoreListEl.innerHTML = '';
+      highscores.forEach((h,i)=>{
+        const li=document.createElement('li');
+        li.textContent=`${i+1}. ${h.name}: ${h.score}`;
+        highscoreListEl.appendChild(li);
+      });
+    }
+    renderHighscores();
+
+    // Timer
+    function formatTime(sec) {
+      const m=String(Math.floor(sec/60)).padStart(2,'0'); const s=String(sec%60).padStart(2,'0'); return `${m}:${s}`;
+    }
+    function updateTimer() {
+      if(--timeLeft<=0){ clearInterval(timerInterval); answerInput.disabled=true; actionBtn.disabled=true; }
+      timerEl.textContent=formatTime(timeLeft);
+    }
+
+    // Quiz
+    function nextWord() {
+      currentAnswer=entries[Math.floor(Math.random()*entries.length)];
+      const spaces = (currentAnswer.match(/ /g) || []).length;
+      if (spaces >= 1) {
+        hintEl.textContent = `${currentAnswer.length} bokstaver, ${spaces} mellomrom`;
+      } else {
+        hintEl.textContent = `${currentAnswer.length} bokstaver`;
+      }
+      answerInput.value=''; answerInput.disabled=false; answerInput.focus(); playWord();
+    }
+    function playWord() {
+      if (!currentAnswer) return;
+      // Pronunciation overrides and English for specific terms
+      const pronunciationMap = {
+          'bremsekaliper': 'bremse-kaliper',
+          'girskifter': 'gir-skifter'
+      };
+      const englishWords = ['drop','rockgarden','flowtrail','singeltrack'];
+      const lower = currentAnswer.toLowerCase();
+      const text = pronunciationMap[lower] || currentAnswer;
+      const utter = new SpeechSynthesisUtterance(text);
+      if (englishWords.includes(lower)) {
+        utter.lang = 'en-US';
+        utter.rate = 0.8;
+      } else {
+        utter.lang = 'nb-NO';
+        utter.rate = 0.75;
+      }
+      speechSynthesis.cancel();
+      speechSynthesis.speak(utter);
+    }
+    function checkAnswer(){
+      const ans=answerInput.value.trim().toLowerCase(); answerInput.value=''; speechSynthesis.cancel();
+      if(ans===currentAnswer.toLowerCase()){
+        studentScore++; timeLeft+=3; timerEl.textContent=formatTime(timeLeft);
+        statusEl.textContent='Riktig!';
+        const u=new SpeechSynthesisUtterance('Riktig!'); u.lang='nb-NO'; u.rate=0.75;
+        u.onend=()=>{
+          bikeAnimationEl.classList.add('animate');
+          bikeAnimationEl.addEventListener('animationend',()=>{
+            bikeAnimationEl.classList.remove('animate');
+          },{once:true});
+          // eligibility
+          const lowest=highscores[highscores.length-1].score;
+          if(studentScore>lowest) nameEntryEl.style.display='block';
+          setTimeout(nextWord,500);
+        };
+        speechSynthesis.speak(u);
+      } else {
+        statusEl.textContent=`Feil! Ordet var ${currentAnswer}`;
+        const w=new SpeechSynthesisUtterance('Feil!'); w.lang='nb-NO'; w.rate=0.75;
+        w.onend=()=>{
+          const spelled=currentAnswer.toUpperCase().split('').join(' ');
+          const su=new SpeechSynthesisUtterance(spelled); su.lang='nb-NO'; su.rate=0.6;
+          su.onend=()=>setTimeout(nextWord,500);
+          speechSynthesis.speak(su);
+        };
+        speechSynthesis.speak(w);
+      }
+    }
+
+    // Events
+    actionBtn.addEventListener('click',()=>{
+      if(actionBtn.textContent==='Start'){
+        answerInput.disabled=false; answerInput.value=''; actionBtn.textContent='Trykk enter';
+        timerInterval=setInterval(updateTimer,1000); nextWord();
+      } else { checkAnswer(); }
+    });
+    answerInput.addEventListener('keydown',e=>{ if(e.key==='Enter'&&actionBtn.textContent==='Trykk enter') checkAnswer(); });
+    speakBtn.addEventListener('click',playWord);
+
+    submitNameBtn.addEventListener('click',()=>{
+      const name=playerNameInput.value.trim()||'Spiller';
+      highscores.pop(); highscores.push({name,score:studentScore}); highscores.sort((a,b)=>b.score-a.score);
+      renderHighscores(); nameEntryEl.style.display='none';
+    });
+  </script>
+</body>
+</html>
